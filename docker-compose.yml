@@ -1,0 +1,39 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: profile-mng-mysql-container
+    ports:
+      - 3306:3306
+      - 33060:33060
+    volumes:
+      - ${HOME}/temp/profile-mng-mysql-data:/var/lib/mysql
+      - ${PWD}/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - profile-mng-user-defined-bridge-network
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: profile-manager-datasource-user
+      MYSQL_USER: danielpm1982-user
+      MYSQL_PASSWORD: user
+    healthcheck:
+      test: ["CMD-SHELL", 'mysqladmin ping']
+      interval: 10s
+      timeout: 2s
+      retries: 10
+networks:
+  profile-mng-user-defined-bridge-network:
+    driver: bridge
+    name: profile-mng-user-defined-bridge-network
+
+# this docker-compose initializes only the MySQL container, so that the .jar executable file for the web app can be
+# initialized manually (without dockerization of the web app) by using ./mvnw or java -jar commands. Observe that
+# the started DBMS and DB are available to apps external to the container through its published ports (e.g. MySQL Workbench).
+# Also, the persistency of the DB data is synced with the container's through the mappings of volumes from the container
+# /var/lib/mysql internal volume to the outside filesystem volume at ${HOME}/temp/profile-mng-mysql-data. The other volume
+# mapping, in turn, maps from the base project ${PWD}/docker-entrypoint-initdb.d (with the sql init file) to the respective
+# folder inside the container - /docker-entrypoint-initdb.d - where sql init files are expected to be added so that MySQL
+# Service can automatically run them at first DBMS run (creating the schema of tables and populating these with the initial
+# data, if any.
+# For running the web app from Docker containers, the other docker compose files should be used instead (not this one).
+# Additional info on how to start up this project - including through this docker-compose file - see comments at
+# Springboot3ProfileManagerApplication main class.

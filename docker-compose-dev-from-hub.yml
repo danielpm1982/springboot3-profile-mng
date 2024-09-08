@@ -1,0 +1,31 @@
+services:
+  webapp:
+    image: danielpm1982/profile-mng:v.1.0.0-dev
+    container_name: profile-mng-dev-springboot-container
+    ports:
+      - 8080:8080
+    networks:
+      - profile-mng-user-defined-bridge-network
+    environment:
+      SPRING_DATASOURCE_NAME: profile-manager-datasource-admin
+      SPRING_DATASOURCE_USERNAME: danielpm1982-admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_PROFILES_ACTIVE: dev
+networks:
+  profile-mng-user-defined-bridge-network:
+    driver: bridge
+    name: profile-mng-user-defined-bridge-network
+
+# this docker-compose runs an already built Docker image from this web app, available at Docker Hub as
+# danielpm1982/profile-mng:v.1.0.0-dev, not needing any Dockerfile or .jar file for building the image (and container) locally.
+# The web app is automatically connected with H2 by simply setting the datasource properties and setting the properties profile as
+# "dev" (see application-dev.properties file). No MySQL container is thus created or run, only an in-memory instance of the H2
+# Relational DBMS, with the schema and data created/loaded from the resources files: schema.sql and data.sql. The
+# docker-entrypoint-initdb.d folder sql init file is not used here.
+# The H2 DBMS and DB can be accessed not only through the web app itself, but through the /h2-console endpoint.
+# Also, there is no persistency of the DB data in external files, and, as soon as the web app terminates, the in-memory data is
+# eliminated, as well.
+# For running this web app from "./mvnw" or "java -jar" commands (after starting a MySQL container), or from a Docker container
+# connected to a same network as a MySQL container, the other docker compose files should be used instead (not this one).
+# Additional info on how to start up this project - including through this docker-compose file - see comments at
+# Springboot3ProfileManagerApplication main class.

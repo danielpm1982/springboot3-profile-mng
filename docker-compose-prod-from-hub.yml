@@ -1,0 +1,55 @@
+services:
+  webapp:
+    image: danielpm1982/profile-mng:v.1.0.0-prod
+    container_name: profile-mng-prod-springboot-container
+    ports:
+      - 8080:8080
+    networks:
+      - profile-mng-user-defined-bridge-network
+    environment:
+      MYSQL_PORT_3306_TCP_ADDR: profile-mng-mysql-container
+      MYSQL_PORT_3306_TCP_PORT: 3306
+      MYSQL_ENV_MYSQL_DATABASE: profile-manager-datasource-user
+      MYSQL_ENV_MYSQL_USER: danielpm1982-user
+      MYSQL_ENV_MYSQL_PASSWORD: user
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      mysql:
+        condition: service_healthy
+  mysql:
+    image: mysql:8
+    container_name: profile-mng-mysql-container
+    ports:
+      - 3306:3306
+      - 33060:33060
+    volumes:
+      - ${HOME}/temp/profile-mng-mysql-data:/var/lib/mysql
+      - ${PWD}/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - profile-mng-user-defined-bridge-network
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: profile-manager-datasource-user
+      MYSQL_USER: danielpm1982-user
+      MYSQL_PASSWORD: user
+    healthcheck:
+      test: ["CMD-SHELL", 'mysqladmin ping']
+      interval: 10s
+      timeout: 2s
+      retries: 10
+networks:
+  profile-mng-user-defined-bridge-network:
+    driver: bridge
+    name: profile-mng-user-defined-bridge-network
+
+# this docker-compose runs two already built Docker images, one for the web app and another for the MySQL DBMS, available at Docker Hub as
+# danielpm1982/profile-mng:v.1.0.0-prod and mysql:8 respectively, not needing any Dockerfile or .jar file for building the images (and containers).
+# Both image containers are automatically connected through a user-defined bridge network. The properties profile is set as "prod" (see
+# application-prod.properties file). The schema and data are created/loaded from docker-entrypoint-initdb.d folder sql init file, synced with the
+# correspondent folder inside the MySQL container (which runs the sql init file at first start up of the DBMS). Also, persistency is done at an
+# external volume, and, even if the web app terminates, or even when it is deleted and rebuilt, the saved data is preserved, being synced back to
+# inside the MySQL container.
+# For running this web app from "./mvnw" or "java -jar" commands (after starting a MySQL container), or from a Docker container
+# with an in-memory H2 DB, the other docker compose files should be used instead (not this one).
+# Additional info on how to start up this project - including through this docker-compose file - see comments at
+# Springboot3ProfileManagerApplication main class.
